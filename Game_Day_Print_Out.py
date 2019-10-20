@@ -274,7 +274,6 @@ def espn_college_football_html_parsing(espn_college_football_url, todays_date, l
 
         if collect_next_group_of_games == False:
             if items.name == 'h2':
-                print "FUCK YA"
                 # print items.text
                 found_date = items.text + " " + date.today().strftime("%Y")
                 found_date = datetime.strptime(found_date, '%A, %B %d %Y')
@@ -282,19 +281,16 @@ def espn_college_football_html_parsing(espn_college_football_url, todays_date, l
 
                 found_date = found_date.strftime("%m-%d-%Y")
 
-                print "found_date:",  found_date, "todays_date", todays_date
-
                 if found_date == todays_date:
-                    print "YAY its a today game"
                     collect_next_group_of_games = True
                     continue
                 elif found_date < todays_date:
                     #continue on in the loop
-                    print "continue to find todays date"
+                    # print "continue to find todays date"
                     continue
                 else:
                     # found date is in the future, exit loop, either no games today or we have already found the games today
-                    print "oh no we have passed our date"
+                    print "oh no we have passed our date.... This should have not happened! Something went wrong here"
                     break
 
         else:
@@ -355,9 +351,6 @@ def espn_college_football_html_parsing(espn_college_football_url, todays_date, l
             espn_college_football_dictionary['football'] = espn_list_of_games
 
             return espn_college_football_dictionary
-            # print "this is what we want!!!!"
-            # break
-
 
 
 
