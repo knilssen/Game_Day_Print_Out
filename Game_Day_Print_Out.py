@@ -5,12 +5,11 @@
 #           pip install requests
 #           pip install html5lib
 #           pip install bs4
+#           pip install unidecode
 #
 #
 #
 #
-#  Fix channel number dictionary for when there are multiple different feeds with all the same kinda channel name
-#  this creates it so there is only one entry to the dictionary becuase it keeps on rerrwiting itself!
 #
 
 import sys
