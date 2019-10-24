@@ -11,6 +11,28 @@
 #
 #
 #
+#
+#
+#   Possible do a by league in our game information as well?
+#   so it would look like:
+#       [ sport ]             ex:          [ football ]
+#
+#           |
+#
+#       [ league ]                         [ ncaa ]
+#
+#           |
+#
+#       [ games ]                           [ matchup data]
+#
+#
+#
+#   This way we can print this out easier by sport, by league so like ncaa and nfl would be separate and then by time
+#
+#
+#
+#
+#
 
 import sys
 import requests
@@ -26,10 +48,11 @@ list_of_sports_we_dont_want_or_need = ["combat sports", "volleyball"]
 list_of_sports_without_home_and_away =  ["golf", "tennis", "racing", "Racing", "Golf", "Tennis"]
 
 streaming_channels = ['espn3', 'espn+']
-# list_of_sport_event_stages = ["quarterfinal", "semifinal", "final"]
+channels_not_on_comcast = ['accn']
+directv_channel_broadcasters = {'KCPQ':'fox', 'KOMO':'abc', 'KIRO':'cbs', 'KING':'nbc'}
+comcast_channel_numbers = {'pac12': '431', 'sec':'638', 'fs1':'620'}
 
-#
-directv_channel_broadcasters = {'kcpq':'fox', 'komo':'abc', 'kiro':'cbs', 'king':'nbc'}
+null_unicode = 'null'.decode('utf_8')
 
 
 #
@@ -112,8 +135,12 @@ class Game_info:
     def __init__(self, sport, league, first_team, second_team, home_team, time, broadcaster, directv_channel_info, comcast_channel_info):
         #
         # print (sport, league, first_team, second_team, home_team, time, broadcaster, directv_channel_info, comcast_channel_info)
-        self.sport = str(sport.encode('ascii', 'ignore').decode('ascii')).lower()
-        self.league = str(league.encode('ascii', 'ignore').decode('ascii')).lower()
+        for x in range(0, len(broadcaster)):
+            broadcaster[x] = str(unidecode.unidecode(broadcaster[x])).lower()
+
+
+        self.sport = str(unidecode.unidecode(sport)).lower()
+        self.league = str(unidecode.unidecode(league)).lower()
         self.first_team = str(unidecode.unidecode(first_team)).lower()
         self.second_team = str(unidecode.unidecode(second_team)).lower()
         self.home_team = str(unidecode.unidecode(home_team)).lower()
@@ -146,7 +173,7 @@ def directv_html_parsing(directv_url, todays_date):
 
         if sport_name not in list_of_sports_we_dont_want_or_need:
 
-            print "Found sport: ", sport_name
+            # print "Found sport: ", sport_name
 
             for matchup in sport.findAll('div', attrs = {'class':'gameInfo'}):
 
@@ -154,8 +181,8 @@ def directv_html_parsing(directv_url, todays_date):
 
                 if sport_name in list_of_sports_without_home_and_away:
                     first_team = matchup.find('span', attrs = {'class':'eventTitle'}).text
-                    second_team = "null"
-                    home_team = "null"
+                    second_team = null_unicode
+                    home_team = null_unicode
                 else:
                     teams = matchup.find('span', attrs = {'class':'eventTitle'}).text
                     if " at " in teams:
@@ -164,18 +191,18 @@ def directv_html_parsing(directv_url, todays_date):
                         home_team = teams[1]
                     elif " vs " in teams:
                         teams = teams.split(' vs ')
-                        home_team = "null"
+                        home_team = null_unicode
                     elif " vs. " in teams:
                         teams = teams.split(' vs. ')
-                        home_team = "null"
+                        home_team = null_unicode
                     elif " en " in teams:
                         # Incase we have a spanish broadcast
                         teams = teams.split(' en ')
-                        home_team = "null"
+                        home_team = null_unicode
                     elif " v. " in teams:
                         # incase we have a spanish broadcast
                         teams = teams.split(' v. ')
-                        home_team = "null"
+                        home_team = null_unicode
                     else:
                         print "\n"
                         print "Error: cant split between home and away teams"
@@ -207,7 +234,7 @@ def directv_html_parsing(directv_url, todays_date):
 
                     channel_number_dictionary_entry_form = {'number':'null', 'feed':'null', 'definiton':'standard'}
 
-                    channel_name = str(channel.find('span', attrs = {'class':'channelCallsign'}).text).lower()
+                    channel_name = (channel.find('span', attrs = {'class':'channelCallsign'}).text)
                     if channel_name in directv_channel_broadcasters:
                         channel_name = directv_channel_broadcasters[channel_name]
 
@@ -224,36 +251,19 @@ def directv_html_parsing(directv_url, todays_date):
                     if channel_definition != None:
                         channel_number_dictionary_entry_form['definiton'] = channel_definition.text
 
-                    channel_name_list.append(channel_name)
+                    channel_name_list.append(channel_name.decode('utf_8'))
                     channel_number_dictionary[channel_name] = channel_number_dictionary_entry_form
 
 
 
-                new_game = Game_info(sport_name, league, first_team, second_team, home_team, time, channel_name_list, channel_number_dictionary, "null")
+                new_game = Game_info(sport_name.decode('utf_8'), league, first_team, second_team, home_team, time, channel_name_list, channel_number_dictionary, 'null')
                 sport_list_of_games.append(new_game)
 
             directv_dictionary[sport_name] = sport_list_of_games
 
         else:
-            print "Found sport we dont want or need: ", sport_name
-
-
-    #
-    # now lets print out what we found!
-    #
-    print "\n"
-    print "This is what we found for sports games for todays date", todays_date + ":"
-    print "\n"
-
-    tabbed_print = "    "
-
-    for sport in directv_dictionary:
-        print sport
-        for event in directv_dictionary[sport]:
-            print tabbed_print, event
-
-        print "\n"
-
+            # print "Found sport we dont want or need: ", sport_name
+            continue
 
     return directv_dictionary
 
@@ -288,7 +298,7 @@ def espn_college_football_html_parsing(espn_college_football_url, todays_date, l
                 # print items.text
                 found_date = items.text + " " + date.today().strftime("%Y")
                 found_date = datetime.strptime(found_date, '%A, %B %d %Y')
-                print found_date
+                # print found_date
 
                 found_date = found_date.strftime("%m-%d-%Y")
 
@@ -333,7 +343,7 @@ def espn_college_football_html_parsing(espn_college_football_url, todays_date, l
                         # print matchup_data
                         if matchup_data.text != "":
                             # print "we found matchup_data text:", matchup_data.text
-                            espn_matchup_network = str(matchup_data.text).lower()
+                            espn_matchup_network = matchup_data.text
                         elif matchup_data.find('img'):
                             # print "We did not find matchup_data text. This means it must be a picture and we have to look in the pictures tags for the network info!"
                             # get the alt and the class tags
@@ -343,21 +353,21 @@ def espn_college_football_html_parsing(espn_college_football_url, todays_date, l
                             # print "class:", matchup_data.img['class'][0]
 
                             if matchup_data.img['alt'] == matchup_data.img['class'][0]:
-                                espn_matchup_network = str(matchup_data.img['class'][0]).lower()
+                                espn_matchup_network = matchup_data.img['class'][0]
                                 # print "our alt and class for the network image are the same:", matchup_data.img['class'][0]
 
                         else:
                             # No network found. Game is not televised?
-                            espn_matchup_network = "null"
+                            espn_matchup_network = null_unicode
                             # print "No network found. Game is not televised?"
 
                         # print "should be our network?"
 
                 # print "\n"
-                if espn_matchup_network != "null":
-                    new_game = Game_info('football', 'ncaa', espn_matchup_home_team, espn_matchup_away_team, espn_matchup_home_team, espn_matchup_time, espn_matchup_network, 'null', "null")
+                if espn_matchup_network != null_unicode:
+                    new_game = Game_info('football'.decode('utf_8'), 'ncaa', espn_matchup_home_team, espn_matchup_away_team, espn_matchup_home_team, espn_matchup_time, [espn_matchup_network], 'null', 'null')
                     espn_list_of_games.append(new_game)
-                    print new_game, "\n"
+                    # print new_game, "\n"
 
             espn_college_football_dictionary['football'] = espn_list_of_games
 
@@ -389,13 +399,13 @@ def compare_add_directv_espn(directv_games, espn_college_football_games):
                     # If the network matches up we will count it as a match
                     elif (directv_football_matchup.first_team == espn_football_matchup.first_team or directv_football_matchup.first_team == espn_football_matchup.second_team) or (directv_football_matchup.second_team == espn_football_matchup.first_team or directv_football_matchup.second_team == espn_football_matchup.second_team):
                         # print 'possible match found:', directv_football_matchup, espn_football_matchup
-                        print "\n possible matchup found, teams:", directv_football_matchup.first_team, directv_football_matchup.second_team
+                        # print "\n possible matchup found, teams:", directv_football_matchup.first_team, directv_football_matchup.second_team
                         # print "broadcasters are:", directv_football_matchup.broadcaster, espn_football_matchup.broadcaster
-                        if  directv_football_matchup.broadcaster[0] == espn_football_matchup.broadcaster:
-                            print "possible match found, broadcasters line up"
-                            print "times are:", directv_football_matchup.time, espn_football_matchup.time
+                        if  directv_football_matchup.broadcaster[0] == espn_football_matchup.broadcaster[0]:
+                            # print "possible match found, broadcasters line up"
+                            # print "times are:", directv_football_matchup.time, espn_football_matchup.time
                             if directv_football_matchup.time == espn_football_matchup.time:
-                                print "matchup found, times line up as well!"
+                                # print "matchup found, times line up as well!"
 
                                 same_game_found = True
                                 # print 'match found:', directv_football_matchup, espn_football_matchup
@@ -405,16 +415,36 @@ def compare_add_directv_espn(directv_games, espn_college_football_games):
 
             if same_game_found == False:
                 # print "no match found for espn football matchup:", espn_football_matchup
-                no_matches_found_list.append(espn_football_matchup)
+
+                # If the reason why we can not find a match is becuase it is a streaming only chnanel,
+                # then we dont need this games information and we can exclude it from our find
+                if espn_football_matchup.broadcaster[0] not in streaming_channels and espn_football_matchup.broadcaster[0] not in channels_not_on_comcast:
+                    # Try to add a comcast only channel number list for stuff like pac12 network so the channel number is already added at this step
+                    if espn_football_matchup.broadcaster[0] in comcast_channel_numbers:
+                        channel_number_dictionary = {}
+                        channel_number_dictionary_entry_form = {'number':'null', 'feed':'null', 'definiton':'standard'}
+                        channel_number_dictionary_entry_form['number'] = comcast_channel_numbers[espn_football_matchup.broadcaster[0]]
+                        channel_number_dictionary_entry_form['definiton'] = "hd"
+                        channel_number_dictionary[espn_football_matchup.broadcaster[0]] = channel_number_dictionary_entry_form
+                        espn_football_matchup.comcast_channel_number = channel_number_dictionary
+
+                        no_matches_found_list.append(espn_football_matchup)
+
+                    else:
+                        no_matches_found_list.append(espn_football_matchup)
 
 
-        print "No found matches:\n"
+        # Add not found games that are not streaming channles to our found games
         for no_match_found in no_matches_found_list:
-            print no_match_found
+            directv_games['football'].append(no_match_found)
+            # print no_match_found
+
+        return directv_games
 
     else:
-        # Return the matches we havent found a match for
-        return no_match_found
+        # This means we found no games on espn for college football
+        # We can just return the directv games at this point since there is nothing from espn
+        return directv_games
 
 
 
@@ -432,12 +462,12 @@ def main(zip_code):
     espn_college_football_url = "https://www.espn.com/college-football/schedule/_/week/9"
 
 
-    print "\n"
-    print "Todays date to be used for finding games and their channels:", todays_date
-    print "\n"
-    print "Directv address:", directv_address.get_address()
-    print "ESPN college football schedule address:", espn_college_football_url
-    print "\n"
+    # print "\n"
+    # print "Todays date to be used for finding games and their channels:", todays_date
+    # print "\n"
+    # print "Directv address:", directv_address.get_address()
+    # print "ESPN college football schedule address:", espn_college_football_url
+    # print "\n"
 
 
 
@@ -445,13 +475,34 @@ def main(zip_code):
 
     espn_college_football_games = espn_college_football_html_parsing(espn_college_football_url, todays_date, local_tz)
 
-    combined_directv_and_espn_football_games = compare_add_directv_espn(directv_games, espn_college_football_games)
-
     # Compare the games we found in espn college football games to the football games we found through direct tv. The only outlires should be the games that are showed on the
     # pac12 network because that channel is only on comcast
     # If there are any outliers that arent pac12 network, print them out and analyze why we do have outliers!
     # Add the pac12 network, and other networks not on directv games to the list and if no errors. We should then start printing them out nicely for
     # those to use at the lodge!!!!!!
+
+    combined_directv_and_espn_football_games = compare_add_directv_espn(directv_games, espn_college_football_games)
+
+
+
+
+
+
+    #
+    # now lets print out what we found!
+    #
+    print "\n"
+    print "This is what we found for sports games for todays date", todays_date + ":"
+    print "\n"
+
+    tabbed_print = "    "
+
+    for sport in combined_directv_and_espn_football_games:
+        print sport
+        for event in combined_directv_and_espn_football_games[sport]:
+            print tabbed_print, event
+
+        print "\n"
 
 
 
