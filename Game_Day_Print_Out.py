@@ -125,7 +125,6 @@ def directv_html_parsing(directv_url, todays_date):
     raw_directv_html = requests.get(URL)
 
     directv_soup = BeautifulSoup(raw_directv_html.content, 'html5lib')
-    # print(directv_soup.prettify())
 
     # make a dictionary for what we find
     directv_dictionary = {}
@@ -138,7 +137,7 @@ def directv_html_parsing(directv_url, todays_date):
 
         sport_list_of_games = []
 
-        if sport_name.lower() not in list_of_sports_we_dont_want_or_need:
+        if sport_name not in list_of_sports_we_dont_want_or_need:
 
             print "Found sport: ", sport_name
 
@@ -146,7 +145,7 @@ def directv_html_parsing(directv_url, todays_date):
 
                 league = matchup.find('div', attrs = {'class':'sportLabel'}).text
 
-                if sport_name.lower() in list_of_sports_without_home_and_away:
+                if sport_name in list_of_sports_without_home_and_away:
                     first_team = matchup.find('span', attrs = {'class':'eventTitle'}).text
                     second_team = "null"
                     home_team = "null"
@@ -353,6 +352,26 @@ def espn_college_football_html_parsing(espn_college_football_url, todays_date, l
             return espn_college_football_dictionary
 
 
+def combined_directv_and_espn_football_games(directv_games, espn_college_football_games):
+    # comapre the football games we found on espn to the football games we found on directv and then add the games that are only on comacast
+    if len(espn_college_football_games['football']) != 0:
+        for espn_football_matchup in espn_college_football_games['football']:
+            same_game_found == False
+            for directv_football_matchup in directv_games['football']:
+                if directv_football_matchup.league == "ncaa":
+                    if (directv_football_matchup.first_team.lower() == espn_football_matchup.first_team.lower() and directv_football_matchup.second_team.lower() == espn_football_matchup.second_team.lower()) or (directv_football_matchup.first_team.lower() == espn_football_matchup.second_team.lower() and directv_football_matchup.second_team.lower() == espn_football_matchup.first_team.lower()):
+                        same_game_found == True
+                        print 'match found:' directv_football_matchup, espn_football_matchup
+                        break
+
+            if same_game_found == False:
+                print "no match found for espn football matchup:", espn_football_matchup
+
+    else:
+        return directv_games
+
+
+
 
 
 def main(zip_code):
@@ -379,6 +398,8 @@ def main(zip_code):
     directv_games = directv_html_parsing(directv_address.get_address(), todays_date)
 
     espn_college_football_games = espn_college_football_html_parsing(espn_college_football_url, todays_date, local_tz)
+
+    combined_directv_and_espn_football_games = compare_add_directv_espn(directv_games, espn_college_football_games)
 
     # Compare the games we found in espn college football games to the football games we found through direct tv. The only outlires should be the games that are showed on the
     # pac12 network because that channel is only on comcast
