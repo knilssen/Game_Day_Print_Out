@@ -450,29 +450,29 @@ def compare_add_directv_espn(directv_games, espn_college_football_games):
 
 
 
+# Finds the correct channels on comcast for our sports games and adds it to our dictonary
+def add_comcast_channels(combined_directv_and_espn_football_games, todays_date):
+    return "done"
+
+# Prints out our games to the printer!!!
+def print_out(games_to_be_printed_out, todays_date):
+    return "done"
+
+
+
+
 def main(zip_code):
     # Maybe in the future derive this timezone based off of zip_code
     local_tz = timezone('Etc/GMT-0')
     today = date.today()
-    # todays_date = today.strftime("%m-%d-%Y")
-    todays_date = "10-26-2019"
+    todays_date = today.strftime("%m-%d-%Y")
 
     directv_address = Directv_address(todays_date, zip_code)
-    # espn_college_football_url = "https://www.espn.com/college-football/schedule/_/year/" + today.strftime("%Y")
-    espn_college_football_url = "https://www.espn.com/college-football/schedule/_/week/9"
-
-
-    # print "\n"
-    # print "Todays date to be used for finding games and their channels:", todays_date
-    # print "\n"
-    # print "Directv address:", directv_address.get_address()
-    # print "ESPN college football schedule address:", espn_college_football_url
-    # print "\n"
-
 
 
     directv_games = directv_html_parsing(directv_address.get_address(), todays_date)
 
+    espn_college_football_url = "https://www.espn.com/college-football/schedule/_/year/" + today.strftime("%Y")
     espn_college_football_games = espn_college_football_html_parsing(espn_college_football_url, todays_date, local_tz)
 
     # Compare the games we found in espn college football games to the football games we found through direct tv. The only outlires should be the games that are showed on the
@@ -482,6 +482,13 @@ def main(zip_code):
     # those to use at the lodge!!!!!!
 
     combined_directv_and_espn_football_games = compare_add_directv_espn(directv_games, espn_college_football_games)
+
+
+    # Now find the comcast channels for our sports games!
+    games_to_be_printed_out = add_comcast_channels(combined_directv_and_espn_football_games, todays_date)
+
+    # Now take all the sports information and prepare and print it out!
+    print_out(games_to_be_printed_out, todays_date)
 
 
 
