@@ -50,8 +50,14 @@ list_of_sports_without_home_and_away =  ["golf", "tennis", "racing", "Racing", "
 streaming_channels = ['espn3', 'espn+']
 channels_not_on_comcast = ['accn']
 directv_channel_broadcasters = {'KCPQ':'fox', 'KOMO':'abc', 'KIRO':'cbs', 'KING':'nbc'}
-comcast_channel_numbers = {'pac12': '431', 'sec':'638', 'fs1':'620'}
-
+comcast_channel_numbers = {'abc':   '104',
+                           'nbc':   '105',
+                           'cbs':   '107',
+                           'fox':   '113',
+                           'pac12': '431',
+                           'sec':   '638',
+                           'fs1':   '620'}
+                           
 null_unicode = 'null'.decode('utf_8')
 
 
@@ -449,10 +455,22 @@ def compare_add_directv_espn(directv_games, espn_college_football_games):
 
 
 
-
 # Finds the correct channels on comcast for our sports games and adds it to our dictonary
 def add_comcast_channels(combined_directv_and_espn_football_games, todays_date):
-    return "done"
+    for sport in combined_directv_and_espn_football_games:
+        for event in combined_directv_and_espn_football_games[sport]:
+            channel_number_dictionary = {}
+            for network in event.broadcaster:
+                if network in comcast_channel_numbers:
+                    channel_number_dictionary_entry_form = {'number':'null', 'feed':'null', 'definiton':'standard'}
+                    channel_number_dictionary_entry_form['number'] = comcast_channel_numbers[network]
+                    channel_number_dictionary_entry_form['definiton'] = "hd"
+                    channel_number_dictionary[network] = channel_number_dictionary_entry_form
+            event.comcast_channel_number = channel_number_dictionary
+
+    return combined_directv_and_espn_football_games
+
+
 
 # Prints out our games to the printer!!!
 def print_out(games_to_be_printed_out, todays_date):
