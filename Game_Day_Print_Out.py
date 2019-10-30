@@ -369,9 +369,9 @@ def espn_college_football_html_parsing(espn_college_football_url, todays_date, l
                     espn_list_of_games.append(new_game)
                     # print new_game, "\n"
 
-            espn_college_football_dictionary['football'] = espn_list_of_games
+        espn_college_football_dictionary['football'] = espn_list_of_games
 
-            return espn_college_football_dictionary
+        return espn_college_football_dictionary
 
 
 def compare_add_directv_espn(directv_games, espn_college_football_games):
