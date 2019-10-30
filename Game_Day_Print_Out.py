@@ -282,6 +282,7 @@ def directv_html_parsing(directv_url, todays_date):
                     channel_number_dictionary_entry_form = {'number':'null', 'feed':'null', 'definiton':'standard'}
 
                     channel_name = (channel.find('span', attrs = {'class':'channelCallsign'}).text)
+                    channel_name = str(unidecode.unidecode(channel_name)).lower()
                     if channel_name in directv_channel_broadcasters:
                         channel_name = directv_channel_broadcasters[channel_name]
 
@@ -298,7 +299,7 @@ def directv_html_parsing(directv_url, todays_date):
                     if channel_definition != None:
                         channel_number_dictionary_entry_form['definiton'] = channel_definition.text
 
-                    channel_name_list.append(channel_name.decode('utf_8'))
+                    channel_name_list.append(channel_name)
                     channel_number_dictionary[channel_name] = channel_number_dictionary_entry_form
 
 
