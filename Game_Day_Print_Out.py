@@ -160,39 +160,39 @@ class Game_info:
             # We have no home team which means that we might not have a second team. Check if we do.
             if self.second_team != "null":
                 # We have no home team but we still have two teams
-                return_list = [self.league, self.first_team, 'vs', self.second_team, self.time]
+                return_list = ['', self.league, self.first_team.title(), 'vs', self.second_team.title(), self.time]
 
             else:
                 # We have no home team and no second team
-                return_list = [self.league, self.first_team, '', '', self.time]
+                return_list = ['', self.league, self.first_team.title(), '', '', self.time]
 
         else:
             # if we have a home team we also have a first and second team
             if self.first_team == self.home_team:
-                return_list = [self.league, self.second_team, 'at', self.first_team, self.time]
+                return_list = ['', self.league, self.second_team.title(), 'at', self.first_team.title(), self.time]
             else:
-                return_list = [self.league, self.first_team, 'at', self.second_team, self.time]
+                return_list = ['', self.league, self.first_team.title(), 'at', self.second_team.title(), self.time]
 
         # Now if we have directv channels lets add them
         if self.directv_channel_number != 'null':
-            directv_channel_number_tsv_list = ['Directv Channels:']
+            directv_channel_number_tsv_string = ''
             for broadcaster in self.broadcaster:
                 if broadcaster in self.directv_channel_number:
-                    directv_channel_number_tsv_list.append(broadcaster + ': ' + self.directv_channel_number[broadcaster]['number'])
+                    directv_channel_number_tsv_string += (broadcaster.upper() + ': ' + self.directv_channel_number[broadcaster]['number'] + '  ')
 
-            return_list.append(directv_channel_number_tsv_list)
+            return_list.append(directv_channel_number_tsv_string)
         else:
             return_list.append('')
 
 
         # Now if we have comcast channels lets add them
         if self.comcast_channel_number != 'null':
-            comcast_channel_number_tsv_list = ['Comcast Channels:']
+            comcast_channel_number_tsv_string = ''
             for broadcaster in self.broadcaster:
                 if broadcaster in self.comcast_channel_number:
-                    comcast_channel_number_tsv_list.append(broadcaster + ': ' + self.comcast_channel_number[broadcaster]['number'])
+                    comcast_channel_number_tsv_string += (broadcaster.upper() + ': ' + self.comcast_channel_number[broadcaster]['number'] + '  ')
 
-            return_list.append(comcast_channel_number_tsv_list)
+            return_list.append(comcast_channel_number_tsv_string)
         else:
             return_list.append('')
 
@@ -511,8 +511,11 @@ def print_out(games_to_be_printed_out, todays_date):
     with open(tsv_file_for_gameday_printouts,'w') as write_tsv:
         tsv_writer = csv.writer(write_tsv)
 
+        tsv_writer.writerow(['Sport', 'League', 'Team One', '', 'Team Two', 'Time', 'Directv Channels', 'Comcast Channels'])
+        tsv_writer.writerow(['', '', '', '', '', '', '', ''])
+
         for sport in games_to_be_printed_out:
-            tsv_writer.writerow([sport, '', '', '', '', '', ''])
+            tsv_writer.writerow([sport.title(), '', '', '', '', '', '', ''])
 
             for event in games_to_be_printed_out[sport]:
                 tsv_writer.writerow(event.return_for_tsv_printing())
