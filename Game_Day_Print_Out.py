@@ -39,6 +39,7 @@ import requests
 import pytz
 import re
 import unidecode
+import csv
 from pytz import timezone
 from datetime import datetime
 from bs4 import BeautifulSoup
@@ -151,6 +152,52 @@ class Game_info:
 
     def __str__(self):
         return "%s  %s  %s  %s  %s  %s  %s  %s" % (self.league, self.first_team, self.second_team, self.home_team, self.time, self.broadcaster, self.directv_channel_number, self.comcast_channel_number)
+
+    def return_for_tsv_printing(self):
+        return_list = []
+
+        if self.home_team == "null":
+            # We have no home team which means that we might not have a second team. Check if we do.
+            if self.second_team != "null":
+                # We have no home team but we still have two teams
+                return_list = [self.league, self.first_team, 'vs', self.second_team, self.time]
+
+            else:
+                # We have no home team and no second team
+                return_list = [self.league, self.first_team, '', '', self.time]
+
+        else:
+            # if we have a home team we also have a first and second team
+            if self.first_team == self.home_team:
+                return_list = [self.league, self.second_team, 'at', self.first_team, self.time]
+            else:
+                return_list = [self.league, self.first_team, 'at', self.second_team, self.time]
+
+        # Now if we have directv channels lets add them
+        if self.directv_channel_number != 'null':
+            directv_channel_number_tsv_list = ['Directv Channels:']
+            for broadcaster in self.broadcaster:
+                if broadcaster in self.directv_channel_number:
+                    directv_channel_number_tsv_list.append(broadcaster + ': ' + self.directv_channel_number[broadcaster]['number'])
+
+            return_list.append(directv_channel_number_tsv_list)
+        else:
+            return_list.append('')
+
+
+        # Now if we have comcast channels lets add them
+        if self.comcast_channel_number != 'null':
+            comcast_channel_number_tsv_list = ['Comcast Channels:']
+            for broadcaster in self.broadcaster:
+                if broadcaster in self.comcast_channel_number:
+                    comcast_channel_number_tsv_list.append(broadcaster + ': ' + self.comcast_channel_number[broadcaster]['number'])
+
+            return_list.append(comcast_channel_number_tsv_list)
+        else:
+            return_list.append('')
+
+        # Now lets return our list
+        return return_list
 
 
 def directv_html_parsing(directv_url, todays_date):
@@ -456,7 +503,19 @@ def add_comcast_channels(combined_directv_and_espn_football_games, todays_date):
 
 # Prints out our games to the printer!!!
 def print_out(games_to_be_printed_out, todays_date):
-    return "done"
+    tsv_file_for_gameday_printouts = 'gameday_printouts.tsv'
+
+    data = ['text1', 'text2', 'text3', 'text4']
+
+
+    with open(tsv_file_for_gameday_printouts,'w') as write_tsv:
+        tsv_writer = csv.writer(write_tsv)
+
+        for sport in games_to_be_printed_out:
+            tsv_writer.writerow([sport, '', '', '', '', '', ''])
+
+            for event in games_to_be_printed_out[sport]:
+                tsv_writer.writerow(event.return_for_tsv_printing())
 
 
 
