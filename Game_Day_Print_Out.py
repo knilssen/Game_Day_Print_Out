@@ -40,6 +40,8 @@ import pytz
 import re
 import unidecode
 import csv
+from openpyxl import Workbook
+from openpyxl.styles import Alignment
 from pytz import timezone
 from datetime import datetime
 from bs4 import BeautifulSoup
