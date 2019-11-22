@@ -39,6 +39,9 @@ import requests
 import pytz
 import re
 import unidecode
+import csv
+from openpyxl import Workbook
+from openpyxl.styles import Alignment
 from pytz import timezone
 from datetime import datetime
 from bs4 import BeautifulSoup
@@ -152,6 +155,56 @@ class Game_info:
     def __str__(self):
         return "%s  %s  %s  %s  %s  %s  %s  %s" % (self.league, self.first_team, self.second_team, self.home_team, self.time, self.broadcaster, self.directv_channel_number, self.comcast_channel_number)
 
+    def return_for_tsv_printing(self):
+        return_list = []
+
+        if self.home_team == "null":
+            # We have no home team which means that we might not have a second team. Check if we do.
+            if self.second_team != "null":
+                # We have no home team but we still have two teams
+                return_list = ['', self.league, self.first_team.title(), ' vs ', self.second_team.title(), self.time]
+
+            else:
+                # We have no home team and no second team
+                return_list = ['', self.league, self.first_team.title(), '', '', self.time]
+
+        else:
+            # if we have a home team we also have a first and second team
+            if self.first_team == self.home_team:
+                return_list = ['', self.league, self.second_team.title(), ' at ', self.first_team.title(), self.time]
+            else:
+                return_list = ['', self.league, self.first_team.title(), ' at ', self.second_team.title(), self.time]
+
+        # Now if we have directv channels lets add them
+        if self.directv_channel_number != 'null':
+            directv_channel_number_tsv_string = ''
+            for broadcaster in self.broadcaster:
+                if broadcaster in self.directv_channel_number:
+                    # When we have multple channels for the same broadcasting name
+                    for broadcasting_name_channels in self.directv_channel_number[broadcaster]:
+                        directv_channel_number_tsv_string += (broadcaster.upper() + ': ' + broadcasting_name_channels['number'] + '  ')
+
+                    # directv_channel_number_tsv_string += (broadcaster.upper() + ': ' + self.directv_channel_number[broadcaster]['number'] + '  ')
+
+            return_list.append(directv_channel_number_tsv_string)
+        else:
+            return_list.append('')
+
+
+        # Now if we have comcast channels lets add them
+        if self.comcast_channel_number != 'null':
+            comcast_channel_number_tsv_string = ''
+            for broadcaster in self.broadcaster:
+                if broadcaster in self.comcast_channel_number:
+                    comcast_channel_number_tsv_string += (broadcaster.upper() + ': ' + self.comcast_channel_number[broadcaster]['number'] + '  ')
+
+            return_list.append(comcast_channel_number_tsv_string)
+        else:
+            return_list.append('')
+
+        # Now lets return our list
+        return return_list
+
 
 def directv_html_parsing(directv_url, todays_date):
     URL = directv_url
@@ -235,6 +288,7 @@ def directv_html_parsing(directv_url, todays_date):
                     channel_number_dictionary_entry_form = {'number':'null', 'feed':'null', 'definiton':'standard'}
 
                     channel_name = (channel.find('span', attrs = {'class':'channelCallsign'}).text)
+                    channel_name = str(unidecode.unidecode(channel_name)).lower()
                     if channel_name in directv_channel_broadcasters:
                         channel_name = directv_channel_broadcasters[channel_name]
 
@@ -251,8 +305,24 @@ def directv_html_parsing(directv_url, todays_date):
                     if channel_definition != None:
                         channel_number_dictionary_entry_form['definiton'] = channel_definition.text
 
-                    channel_name_list.append(channel_name.decode('utf_8'))
-                    channel_number_dictionary[channel_name] = channel_number_dictionary_entry_form
+
+                    # Since for some reason directv shows sometimes the channel 'fox' to have the channel number 'FOX' instead of a number like 13 or 113, we should
+                    # check if the channel number we found for the channel is actually a number. If its not, we should just discard this entry and for every instance found
+                    # that this happens, the channel fox: 13 is still shown when we also have fox: FOX.
+
+                    # We are using .isdigit() becuase we know the channel number has to be a positive whole integer that has no letters in it.
+                    if channel_number_dictionary_entry_form['number'].isdigit():
+
+                        # if channel_name is already in the list dont add it again. This happens when we have an NHL game where there are multiple NHL channels with the
+                        # channel name of NHL
+                        if channel_name not in channel_name_list:
+                            channel_name_list.append(channel_name)
+
+                        # If we have the same as above, same channel name but different numbers, add to the dictionary value as a list
+                        if channel_name in channel_number_dictionary:
+                            channel_number_dictionary[channel_name].append(channel_number_dictionary_entry_form)
+                        else:
+                            channel_number_dictionary[channel_name] = [channel_number_dictionary_entry_form]
 
 
 
@@ -401,7 +471,9 @@ def compare_add_directv_espn(directv_games, espn_college_football_games):
                         # print 'possible match found:', directv_football_matchup, espn_football_matchup
                         # print "\n possible matchup found, teams:", directv_football_matchup.first_team, directv_football_matchup.second_team
                         # print "broadcasters are:", directv_football_matchup.broadcaster, espn_football_matchup.broadcaster
-                        if  directv_football_matchup.broadcaster[0] == espn_football_matchup.broadcaster[0]:
+
+                        # if  directv_football_matchup.broadcaster[0] == espn_football_matchup.broadcaster[0]:
+                        if espn_football_matchup.broadcaster[0] in directv_football_matchup.broadcaster:
                             # print "possible match found, broadcasters line up"
                             # print "times are:", directv_football_matchup.time, espn_football_matchup.time
                             if directv_football_matchup.time == espn_football_matchup.time:
@@ -456,7 +528,84 @@ def add_comcast_channels(combined_directv_and_espn_football_games, todays_date):
 
 # Prints out our games to the printer!!!
 def print_out(games_to_be_printed_out, todays_date):
-    return "done"
+    tsv_file_for_gameday_printouts = 'gameday_printouts.tsv'
+
+    # data = ['text1', 'text2', 'text3', 'text4']
+
+
+    with open(tsv_file_for_gameday_printouts,'w') as write_tsv:
+        tsv_writer = csv.writer(write_tsv)
+
+        tsv_writer.writerow(['Sport', 'League', 'Team One', '', 'Team Two', 'Time', 'Directv Channels', 'Comcast Channels'])
+        tsv_writer.writerow(['', '', '', '', '', '', '', ''])
+
+        for sport in games_to_be_printed_out:
+            tsv_writer.writerow([sport.title(), '', '', '', '', '', '', ''])
+
+            for event in games_to_be_printed_out[sport]:
+                tsv_writer.writerow(event.return_for_tsv_printing())
+
+
+def print_out_xlsx(games_to_be_printed_out, todays_date):
+    wb = Workbook()
+
+    # Get the worksheet that is created when we get a workbook
+    ws = wb.active
+
+    # Change the title to todays date or something
+    ws.title = todays_date
+
+    alignment=Alignment(wrap_text=True,indent=0)
+
+    # add column headings. NB. these must be strings
+    ws.append([str(todays_date)])
+    ws.append([''])
+    ws.append(['Sport', 'League', 'Team One', '', 'Team Two', 'Time', 'Directv Channels', 'Comcast Channels'])
+
+    column_width_dict = {0:0,
+                        1:0,
+                        2:0,
+                        3:0,
+                        4:0,
+                        5:0,
+                        6:0,
+                        7:0
+                        }
+
+    for sport in games_to_be_printed_out:
+        ws.append([sport.title(), '', '', '', '', '', '', ''])
+
+        if len(sport.title()) > column_width_dict[0]:
+            column_width_dict[0] = len(sport.title())
+
+        for event in games_to_be_printed_out[sport]:
+            ws.append(event.return_for_tsv_printing())
+
+            for column_number, event_data in enumerate(event.return_for_tsv_printing()):
+                if len(str(event_data)) > column_width_dict[column_number]:
+                    column_width_dict[column_number] = len(str(event_data))
+
+
+    for row in ws.iter_rows():
+        # for cell in row:
+        row[6].alignment = alignment
+        row[7].alignment = alignment
+
+
+    for num, col in enumerate(ws.columns):
+        if num != 6 or num != 7:
+            print num
+            ws.column_dimensions[col[0].column_letter].width = column_width_dict[num]
+
+    # openpyxl.worksheet.worksheet.Worksheet.set_printer_settings(ws, paper_size = <someInt>, orientation='por')
+
+    ws.sheet_properties.pageSetUpPr.fitToPage = True
+    ws.page_setup.fitToHeight = False
+
+
+    # AFter we are done adding the data to the worksheet, save the workbook
+    wb.save('gameday_printouts.xlsx')
+
 
 
 
@@ -491,9 +640,7 @@ def main(zip_code):
     print_out(games_to_be_printed_out, todays_date)
 
 
-
-
-
+    print_out_xlsx(games_to_be_printed_out, todays_date)
 
     #
     # now lets print out what we found!
@@ -504,10 +651,11 @@ def main(zip_code):
 
     tabbed_print = "    "
 
-    for sport in combined_directv_and_espn_football_games:
+    for sport in games_to_be_printed_out:
         print sport
-        for event in combined_directv_and_espn_football_games[sport]:
-            print tabbed_print, event
+        for event in games_to_be_printed_out[sport]:
+            # print tabbed_print, event
+            print event.return_for_tsv_printing()
 
         print "\n"
 
