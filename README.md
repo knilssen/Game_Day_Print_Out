@@ -9,6 +9,7 @@ F1_GO is Written in Python
   * [Requirements](#requirements)
   * [Installation](#installation)
   * [Usage](#usage)
+  * [Print Out Example](#Example)
 
 ---------------------------------------
 
@@ -68,3 +69,9 @@ where [ your_area_code ] is replaced by your area code such as
 ```bash
 python Game_Day_Print_Out.py 12345
 ```
+
+## Example
+
+> This is an example excel document of what might be created for the user to print out
+
+![LIVE_TELEMETRY_DASHBOARD](./sample_excel_sheet.png)
