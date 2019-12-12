@@ -1,6 +1,8 @@
 # Game Day Print Outs
 
-> A simple python script that scrapes sports game information for tv
+> A simple python script that scrapes sports game information for tv and uses openpyxl to print out the information in a simple to use and easy to read format!
+>
+> Comcast/ Xfinity information is sparce and hard coded due to the information not being easily publicaly avaliable. To access this information, one must log into Comcast/ Xfinity with their account info to even access channel info and lignups locally. 
 
 F1_GO is Written in Python
 
